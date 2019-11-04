@@ -1,0 +1,50 @@
+# network
+bilstm_layers: 1
+word_dim: 300
+lstm_dim: 100
+out_dim: 100
+type_dim: 15
+beta: 
+pos_dim: 25
+dropi: 0.3
+dropm: 0.0
+dropo: 0.03
+walks_iter: 0
+att: 
+
+# training
+batch: 10
+epoch: 100
+opt: adam
+patience: 5
+early_metric: micro_f
+early_stopping: false
+param_avg: true
+lr: 0.0018
+gc: 25.63
+reg: 3.2e-05 
+
+# data
+train_data: ../../data/ACE-2005/train.data
+test_data: ../../data/ACE-2005/dev.data
+embeds: ../../embeds/wikipedia200.txt
+folder: ../saved_models/ace05_dev_l0
+save_preds: dev
+unk_w_prob: 0.01
+min_w_freq: 1
+lab2ign: 1:NR:2
+lowercase: false
+nested: false
+plot: true
+show_class: false
+direction: r2l  # l2r or l2r+r2l
+
+# tuning
+opt_method: BayesOpt
+num_iterations: 30
+maximizer: scipy
+acquisition_func: ei
+model_type: gp_mcmc
+n_init: 3
+output_path:
+rng:

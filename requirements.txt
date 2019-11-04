@@ -1,0 +1,8 @@
+torch==1.0.1
+recordtype
+tqdm
+numpy
+pyyaml
+yamlordereddictloader
+matplotlib
+gensim
