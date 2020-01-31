@@ -41,6 +41,7 @@ class Trainer:
             self.cur_patience = 0
             self.best_loss = 9999999999
             self.best_score = 0.0
+            self.best_epoch = 0
 
         if params['param_avg']:
             self.averaged_params = {}
@@ -116,19 +117,18 @@ class Trainer:
         """
         if self.test_res['score'][-1] > self.best_score:  # improvement of primary metric
             self.best_score = self.test_res['score'][-1]
-
+            self.best_epoch = epoch
+            self.cur_patience = 0
         #if self.test_res['loss'][-1] < self.best_loss:
         #    self.best_loss = self.test_res['loss'][-1]
-
-            self.cur_patience = 0
         else:
             self.cur_patience += 1
 
         if self.patience == self.cur_patience:  # early stop must take place
-            best_epoch = epoch - self.patience
-            return best_epoch, True
+            self.best_epoch = epoch - self.patience
+            return True
         else:
-            return epoch, False
+            return False
 
     def parameter_averaging(self, epoch=None, reset=False):
         """
@@ -175,22 +175,17 @@ class Trainer:
 
             self.eval_epoch()
 
-            if self.es:
-                best_epoch, stop = self.early_stopping(epoch)  # early stopping criterion
-                if stop:
-                    print('Best epoch: {}'.format(best_epoch))  # estimate best epoch (in case of break)
-                    break
-                elif self.cur_patience == 0:
-                    print('Current best score:', self.best_score)
-                    save_model(self.model_folder, self.model, self.loader)
-            else:
-                save_model(self.model_folder, self.model, self.loader)
+            stop = self.early_stopping(epoch)  # early stopping criterion
+            if self.es and stop:
+                break
 
             if self.pa:
                 self.parameter_averaging(reset=True)
 
+        print('Best epoch: {}'.format(self.best_epoch))
         if self.pa:
-            self.parameter_averaging(epoch=best_epoch)
+            self.parameter_averaging(epoch=self.best_epoch)
+        self.eval_epoch(final=True, save_predictions=True)
 
         print('\n======== END TRAINING: {} ========\n'.format(
             datetime.datetime.now().strftime("%d-%m-%y_%H:%M:%S")))
@@ -285,7 +280,6 @@ class Trainer:
             write_pred2file(output_ts['preds'], output_ts['probs'], pids, self.saveto, self.loader.index2rel)
             write_errors2file(output_ts['preds'], pids, self.saveto, self.loader.index2rel)
             write_bingo2file(output_ts['preds'], pids, self.saveto, self.loader.index2rel)
-
 
     def performance(self, stats):
         """

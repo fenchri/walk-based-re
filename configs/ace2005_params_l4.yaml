@@ -10,7 +10,7 @@ dropi: 0.11
 dropm: 0.0
 dropo: 0.32
 walks_iter: 2
-att: 
+att: True
 
 # training
 batch: 10
@@ -25,9 +25,9 @@ gc: 24.4
 reg: 5.7e-05
 
 # data
-train_data: ../../data/ACE-2005/train.data
-test_data: ../../data/ACE-2005/dev.data
-embeds: ../../embeds/wikipedia200.txt
+train_data: ../data/ACE-2005/train.data
+test_data: ../data/ACE-2005/dev.data
+embeds: ../embeds/wikipedia200.txt
 folder: ../saved_models/ace05_dev_l4
 save_preds: dev
 unk_w_prob: 0.01

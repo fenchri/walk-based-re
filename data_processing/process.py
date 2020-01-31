@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on 03/06/2019
-
 author: fenia
 """
 
@@ -22,7 +21,7 @@ EntStruct = recordtype('EntStruct', 'docid entid name off1 off2 type sent_no wor
 RelStruct = recordtype('RelStruct', 'docid relid type arg1 arg2')
 
 
-def write2file(new_sents, new_entities, new_relations, args, doc_id, data_out, not_found, positive, negative, gg):
+def write2file(new_sents, new_entities, new_relations, args, doc_id, data_out, not_found, positive, negative, no_pairs):
     # generate pairs
     new_entities, missed_ents = check_entities(new_entities, new_relations, include_nested=args.nested)
     new_relations, missed_rels = check_relations(new_entities, new_relations)
@@ -34,10 +33,9 @@ def write2file(new_sents, new_entities, new_relations, args, doc_id, data_out, n
     not_found += cnf
 
     if not pairs:
-        gg += 1
-        pass
+        no_pairs += 1
     else:
-        data_out.write('{}\t{}'.format(doc_id, new_sents))
+        data_out.write('{}\t{}'.format(doc_id, new_sents.lower()))
 
         for args_, p in pairs.items():
             if p.type != '1:NR:2' and p.type != 'not_include':
@@ -46,12 +44,12 @@ def write2file(new_sents, new_entities, new_relations, args, doc_id, data_out, n
                 negative += 1
 
             data_out.write('\t{}\t{}\t{}'.format(p.type, p.dir, p.cross))
-            data_out.write('\t{}\t{}\t{}\t{}\t{}'.format(p.arg1.entid, p.arg1.name, p.arg1.type,
+            data_out.write('\t{}\t{}\t{}\t{}\t{}'.format(p.arg1.entid, p.arg1.name.lower(), p.arg1.type,
                                                          p.arg1.word_id[0], p.arg1.word_id[-1]+1))
-            data_out.write('\t{}\t{}\t{}\t{}\t{}'.format(p.arg2.entid, p.arg2.name, p.arg2.type,
+            data_out.write('\t{}\t{}\t{}\t{}\t{}'.format(p.arg2.entid, p.arg2.name.lower(), p.arg2.type,
                                                          p.arg2.word_id[0], p.arg2.word_id[-1]+1))
         data_out.write('\n')
-    return not_found, positive, negative, gg
+    return not_found, positive, negative, no_pairs
 
 
 def read_brat(args):
@@ -90,7 +88,11 @@ def read_brat(args):
                     relations[filename] += [RelStruct(filename, line[0], region[0], region[1].split('Arg1:')[1],
                                                       region[2].split('Arg2:')[1])]
 
-    print('# Abstacts: {}'.format(len(abstracts)))
+    if args.level == 'doc':
+        print('# Documents: {}'.format(len(abstracts)))
+    elif args.level == 'sent':
+        print('# Sentences: {}'.format(len(abstracts)))
+
     print('# Entities: {}'.format(sum([len(e) for e in entities.values()])))
     print('# Pairs: {}'.format(sum([len(r) for r in relations.values()])))
         
@@ -113,7 +115,8 @@ def main():
     args = parser.parse_args()
 
     abstracts, entities, relations = read_brat(args)
-    not_found, positive, negative, gg = 0, 0, 0, 0
+    not_found, positive, negative, no_pairs = 0, 0, 0, 0
+    all_ents = 0
 
     pbar = tqdm(list(abstracts.keys()))
     with open(args.output_file + '.data', 'w') as data_out:
@@ -136,9 +139,9 @@ def main():
 
                 # tokenisation
                 if args.domain == 'bio':
-                    token_sents = tokenise_genia(split_sents)
+                    token_sents = tokenize_genia(split_sents)
                 else:
-                    token_sents = tokenise_stanford(split_sents)
+                    token_sents = tokenize_stanford(split_sents)
 
                 with open(args.output_file + '_files/' + i + '.split.tok.txt', 'w') as f:
                     f.write('\n'.join(token_sents))
@@ -160,22 +163,24 @@ def main():
                 new_sents, new_entities, new_relations = doc2sent(new_entities, relations[i], sentences)
 
                 for s_id in new_sents.keys():
-                    not_found, positive, negative = \
+                    not_found, positive, negative, no_pairs = \
                         write2file(new_sents[s_id], new_entities[s_id], new_relations[s_id],
                                    args, str(i)+'**'+str(s_id),
                                    data_out,
-                                   not_found, positive, negative)
+                                   not_found, positive, negative, no_pairs)
 
             else:
                 new_relations = relations[i]
-                not_found, positive, negative, gg = \
+                not_found, positive, negative, no_pairs = \
                     write2file(' '.join(sentences), new_entities, new_relations, args, i,
-                               data_out, not_found, positive, negative, gg)
+                               data_out, not_found, positive, negative, no_pairs)
+            all_ents += len(new_entities)
 
     print('Total positive pairs:', positive)
     print('Total negative pairs:', negative)
     print('Total not found pairs:', not_found)
-    print('Sentences without pairs:', gg)
+    print('Sentences without pairs:', no_pairs)
+    print('Entities:', all_ents)
 
 
 if __name__ == "__main__":

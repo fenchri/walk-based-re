@@ -30,7 +30,7 @@ class ConfigLoader:
         parser.add_argument('--test', action='store_true', help='Testing mode - needs a model to load')
         parser.add_argument('--gpu', type=int, required=True, help='GPU number, use -1 for CPU')
         parser.add_argument('--walks', type=int, help='Number of walk iterations')
-        parser.add_argument('--att', type=str, help='attention type', choices=['vector'])
+        parser.add_argument('--att', type=str, help='Use attention or not', choices=['True', 'False'])
         parser.add_argument('--example', action='store_true', help='Print the sentences and info in the 1st batch, then exit (useful for debugging)')
         parser.add_argument('--direction', type=str, help='Direction of arguments to classify', choices=['l2r', 'r2l', 'l2r+r2l'])
         parser.add_argument('--folder', type=str, help='Destination folder to save model, predictions and errors')
@@ -39,7 +39,7 @@ class ConfigLoader:
         parser.add_argument('--test_data', type=str, help='Test data dile')
         parser.add_argument('--epoch', type=int, help='Stopping epoch')
         parser.add_argument('--early_stop', action='store_true', help='Use early stopping')
-        parser.add_argument('--preds', type=str, help='Forder name for predictions')
+        parser.add_argument('--preds', type=str, help='Folder name for predictions')
         return parser.parse_args()
 
     def load_config(self):
@@ -53,7 +53,7 @@ class ConfigLoader:
         parameters['gpu'] = inp.gpu
         parameters['example'] = inp.example
 
-        if inp.att:
+        if inp.att != None:
             parameters['att'] = inp.att
 
         if inp.walks:

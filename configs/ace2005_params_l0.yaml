@@ -25,9 +25,9 @@ gc: 25.63
 reg: 3.2e-05 
 
 # data
-train_data: ../../data/ACE-2005/train.data
-test_data: ../../data/ACE-2005/dev.data
-embeds: ../../embeds/wikipedia200.txt
+train_data: ../data/ACE-2005/train.data
+test_data: ../data/ACE-2005/dev.data
+embeds: ../embeds/wikipedia200.txt
 folder: ../saved_models/ace05_dev_l0
 save_preds: dev
 unk_w_prob: 0.01

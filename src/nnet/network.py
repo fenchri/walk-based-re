@@ -185,7 +185,7 @@ class WalkBasedModel(BaseNet):
             probs, preds = F.softmax(l2r_pairs, dim=1).detach_().max(dim=1)
             
         elif self.direction == 'r2l':
-            r2l_pairs = self.l_class(r2l_pairs)
+            r2l_pairs = self.classifier(r2l_pairs)
             loss = F.cross_entropy(r2l_pairs, r2l_truth)
             reverse = self.reverse_labels()
             probs, b = F.softmax(r2l_pairs, dim=1).detach_().max(dim=1)
@@ -197,6 +197,11 @@ class WalkBasedModel(BaseNet):
             loss = F.cross_entropy(l2r_pairs, l2r_truth) + F.cross_entropy(r2l_pairs, r2l_truth)
             probs, preds = self.correct_predictions(F.softmax(l2r_pairs, dim=1).detach_(),
                                                     F.softmax(r2l_pairs, dim=1).detach_())
+
+        else:
+            print('Wrong directionality selection!')
+            sys.exit(0)
+
         return loss, probs, preds, l2r_truth
 
     def forward(self, binp):
@@ -241,7 +246,7 @@ class WalkBasedModel(BaseNet):
             pairs = self.walk_layer(pairs, condition, map_pair)
 
         # 5. Classification + Loss
-        loss, probs, preds, truth, idx = self.classification(binp['l2r'], binp['rels'], pairs, map_pair)
+        loss, probs, preds, truth = self.classification(binp['l2r'], binp['rels'], pairs, map_pair)
         stats_ = self.measure_statistics(preds, truth)
 
         if self.att:

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on %(date)s
-
 @author: fenia
 """
 
@@ -73,19 +72,15 @@ def generate_pairs(uents, true_rels):
 
         # this pair does not have a relation
         if not_found_rels == total_rels:
-            # pairs['R_neg'+str(unk)] = PairStruct(a1.docid, '1:NR:2', a1, a2, 'L2R', 'NON-CROSS')
-            pairs['R_neg'+str(unk)] = PairStruct(a1.docid, 'not_include', a1, a2, 'L2R', 'NON-CROSS')
+            pairs['R_neg'+str(unk)] = PairStruct(a1.docid, '1:NR:2', a1, a2, 'L2R', 'NON-CROSS')
             unk += 1
-            #     elif c[1].type == t1 and c[0].type == t2:
-            #       pairs[(c[1], c[0])] = PairStruct(a1.pmid, '1:NR:2', c[1], c[0], 'R2L', cross_res, (a2, a1))
-            #       unk += 1
 
     if found_rels != total_rels:
         count_not_found += (total_rels-found_rels)
-#        tqdm.write('FOUND {} <> TOTAL {}, diff {}'.format(found_rels, total_rels, total_rels-found_rels))
-#        for p in true_rels:
-#            if p.relid not in pairs:
-#                tqdm.write('{}, {}'.format(p.arg1, p.arg2))
+        tqdm.write('FOUND {} <> TOTAL {}, diff {}'.format(found_rels, total_rels, total_rels-found_rels))
+        for p in true_rels:
+            if p.relid not in pairs:
+                tqdm.write('{}, {}'.format(p.arg1, p.arg2))
     return pairs, count_not_found
 
 
@@ -94,7 +89,7 @@ def generate_pairs_types(uents, type1, type2, true_rels):
     Generate pais based on their direction as well L2R or R2L
     """
     pairs = OrderedDict()
-    combs = combinations(uents, 2)
+    combs = permutations(uents, 2)
 
     count_not_found = 0
     unk = 0
@@ -108,12 +103,12 @@ def generate_pairs_types(uents, type1, type2, true_rels):
         not_found_rels = 0
         for tr in true_rels:
             if (tr.arg1 == a1.entid) and (tr.arg2 == a2.entid):
-                pairs[tr.relid] = PairStruct(tr.docid, '1:'+tr.type+':2', a1, a2, 'L2R', 'NON-CROSS')
-                found_rels += 1
-
-            elif (tr.arg2 == a1.entid) and (tr.arg1 == a2.entid):
-                pairs[tr.relid] = PairStruct(tr.docid, '2:'+tr.type+':1', a1, a2, 'R2L', 'NON-CROSS')
-                found_rels += 1
+                if tr.type == 'Other':
+                    pairs[tr.relid] = PairStruct(tr.docid, '1:NR:2', a1, a2, 'L2R', 'NON-CROSS')
+                    found_rels += 1
+                else:
+                    pairs[tr.relid] = PairStruct(tr.docid, '1:'+tr.type+':2', a1, a2, 'L2R', 'NON-CROSS')
+                    found_rels += 1
 
             # relation not found
             else:
@@ -122,7 +117,7 @@ def generate_pairs_types(uents, type1, type2, true_rels):
         # this pair does not have a relation
         if not_found_rels == total_rels:
             for t1, t2 in zip(type1, type2):
-                if (a1.type == t1) and (a2.type == t2):
+                if (a1.type == t1) and (a2.type == t2):  # and (a1.word_id != a2.word_id):
                     pairs['R_neg'+str(unk)] = PairStruct(a1.docid, '1:NR:2', a1, a2, 'L2R', 'NON-CROSS')
                     unk += 1
        
@@ -131,7 +126,7 @@ def generate_pairs_types(uents, type1, type2, true_rels):
         tqdm.write('FOUND {} <> TOTAL {}, diff {}'.format(found_rels, total_rels, total_rels-found_rels))
         for p in true_rels:
             if p.relid not in pairs:
-                tqdm.write('{}, {}'.format(p.arg1, p.arg2))
+                print('{}, {}'.format(p.arg1, p.arg2))
     return pairs, count_not_found
 
 
@@ -141,7 +136,6 @@ def fix_sent_break(sents, entities):
     Args:
         sents: (list) old sentences
         entities: (list of structs) entities
-
     Returns: (list) new sentences
     """
     sents_break = '\n'.join(sents)
@@ -158,7 +152,6 @@ def adjust_offsets(old_sents, new_sents, old_entities):
         old sents: (list) old, non-tokenized sentences
         new_sents: (list) new, tokenized sentences
         old_entities: (list of structs) entities with old offsets
-
     Returns: (list of struces) entities with new offsets
     """
     original = " ".join(old_sents)
@@ -240,7 +233,6 @@ def offsets2tokids(sents, entities):
     Args:
         sents:
         entities:
-
     Returns:
     """
     text = " ".join(sents)
@@ -276,7 +268,7 @@ def offsets2tokids(sents, entities):
         if len(span2append) != len(text[e.off1:e.off2].split(' ')):
             tqdm.write('DOC_ID {}, new entity {}, tokens {}, old entity {}'.format(
                 e.docid, repr(text[e.off1:e.off2]), span2append, repr(e.name)))
-            tqdm.write(using_split2(text))
+            print(using_split2(text))
         else:
             e.word_id = span2append
     return entities
@@ -288,7 +280,6 @@ def ent2sent(sents, entities):
     Args:
         sents:
         entities:
-
     Returns:
     """
     cur = 0
@@ -318,9 +309,7 @@ def check_entities(entities, relations, include_nested=True):
     Args:
         entities:  (list of structs) entities
         include_nested: (bool) include/not nested entities
-
     Returns: (list of structs) entities
-
     """
     todel = []
     if not entities:
@@ -350,7 +339,7 @@ def check_entities(entities, relations, include_nested=True):
                 if in_r == False:
                     e2r = b
                     other = a
-                todel += [('Entity {} in doc {} is same with {} -> ignore'.format(repr(e2r.name), e2r.docid, repr(other.name)), e2r)]
+                todel += [('Entity {} ({}) in doc {} is same with {} ({}) -> ignore'.format(repr(e2r.name), e2r.type, e2r.docid, repr(other.name), other.type), e2r)]
         
 #            elif bool(overlap):  # overlapping ranges
 
@@ -411,9 +400,7 @@ def check_relations(entities, relations):
     Args:
         entities: (list of structs) entities
         relations: (list of structs) relations
-
     Returns: (list of structs) relations
-
     """
     todel = []
     # check if entities are missing
@@ -438,17 +425,28 @@ def check_relations(entities, relations):
     # check for duplicates
     for a, b in combinations(relations, 2):
         if (a.type == b.type) and (a.arg1 == b.arg1) and (a.arg2 == b.arg2):
-            todel += [('Relation {} in doc {} is duplicate -> ignore <<----------'.format(a.relid, r.docid), a)]
+            todel += [('Relation {} in doc {} is duplicate -> ignore <<---------- {} same'.format(a.relid, r.docid, a.type), a)]
         elif (a.type != b.type) and (a.arg1 == b.arg1) and (a.arg2 == b.arg2):
-            todel += [('Relation {} in doc {} is duplicate -> ignore <<----------'.format(a.relid, r.docid), a)]
+            if a.type == 'Other':
+                todel += [('Relation {} in doc {} is duplicate -> ignore <<---------- {} {}'.format(a.relid, r.docid, a.type, b.type), a)]
+            elif b.type == 'Other':
+                todel += [('Relation {} in doc {} is duplicate -> ignore <<---------- {} {}'.format(a.relid, r.docid, b.type, a.type), b)]
+            else:
+                todel += [('Relation {} in doc {} is duplicate -> ignore <<---------- {} <>'.format(a.relid, r.docid, a.type), a)]
         elif (a.type != b.type) and (a.arg1 == b.arg2) and (a.arg2 == b.arg1):
-            todel += [('Relation {} in doc {} is duplicate -> ignore <<----------'.format(a.relid, r.docid), a)]
+            if a.type == 'Other':
+                todel += [('Relation {} in doc {} is duplicate -> ignore <<---------- {} {}'.format(a.relid, r.docid, a.type, b.type), a)]
+            elif b.type == 'Other':
+                todel += [('Relation {} in doc {} is duplicate -> ignore <<---------- {} {}'.format(a.relid, r.docid, b.type, a.type), b)]
+            else:
+                todel += [('Relation {} in doc {} is duplicate -> ignore <<---------- {} <>'.format(a.relid, r.docid, a.type), a)]
         elif (a.type == b.type) and (a.arg1 == b.arg2) and (a.arg2 == b.arg1):
-            todel += [('Relation {} in doc {} is duplicate -> ignore <<----------'.format(a.relid, r.docid), a)]
+            todel += [('Relation {} in doc {} is duplicate -> ignore <<---------- {} same reverse'.format(a.relid, r.docid, a.type), a)]
 
     for txt, tdr in todel:
         tqdm.write(txt)
-        relations.remove(tdr)
+        if tdr in relations:
+            relations.remove(tdr)
     return relations, len(todel)
 
 
@@ -459,7 +457,6 @@ def doc2sent(entities, relations, sentences):
         entities: (list of structs) entities in document
         relations: (list of structs) relations in document
         sentences: (list) sentences in documents
-
     Returns: (list of structs) entities in sents,
              (list of structs) relations in sents,
              (list) sents
@@ -487,7 +484,18 @@ def doc2sent(entities, relations, sentences):
             if (r.arg1 in included_ents) and (r.arg2 in included_ents):
                 new_relations[i] += [r]
 
-        total_r += len(new_relations[i]) 
+        total_r += len(new_relations[i])
+
+    if total_r != len(relations):
+        all_ids = []
+        for i in new_relations:
+            print(new_sents[i])
+            for ir in new_relations[i]:
+                all_ids += [ir.relid]
+
+        print(total_r, '<>', len(relations))  # new_relations)
+        for r in relations:
+            if r.relid not in all_ids:
+                print(r.relid)
     
     return new_sents, new_entities, new_relations
-

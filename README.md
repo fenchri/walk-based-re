@@ -3,43 +3,46 @@
 Source code for the paper "[A Walk-based model on Entity Graphs for Relation Extraction](https://www.aclweb.org/anthology/P18-2014/)" in ACL 2018.
 
 
-### Requirements
-- python 3.5 +
-- PyTorch 1.1.0
-- tqdm
-- matplotlib
-- pyyaml
-- recordtype
-- yamlordereddictloader
-- gensim (only for converting the .bin embeddings to .txt)
+### Requirements & Environment
 ```
 pip3 install -r requirements.txt
 ```
+The original model of the paper was implement in [Chainer](https://chainer.org/). This is the same version of the model in [PyTorch](https://pytorch.org/).
+Slight differences might occur due to the above change.
 
-### Environment
-The original model of the paper was implement in [Chainer](https://chainer.org/). This is the same version of the model on [PyTorch](https://pytorch.org/).
-Results might not be exactly the same as in the paper due to this change.
-Further experimentation showed the performance increased significantly when classifying only 1 direction (in comparison with the paper, where we classify both directions). 
-You can select this option from the "--direction" argument in the config files.
+#### Reproducability
+Results are reproducible with the a fixed seed.
+Experimentation showed performance increased significantly when classifying only 1 direction (in comparison with the paper, where both directions are classified). 
+If you want to reproduce the results of the paper you need to use the `--direction l2r+r2l` argument.
+Otherwise, we recommend to use `--direction r2l` or `--direction l2r` in the input or in the config files.
 
 
 
 
 ## Data & Pre-processing
 Download (using the appropriate license) the [ACE 2005 dataset](https://catalog.ldc.upenn.edu/LDC2006T06).
-Use the pre-processing code from the [LSTM-ER](https://github.com/tticoin/LSTM-ER) repo and then run:
+Clone the [LSTM-ER](https://github.com/tticoin/LSTM-ER) repository in order to pre-process the data.
 ```
-$ cd data_processing
-$ python3 process.py --input_folder folder_with_ace05_train_data --output_file ../data/ACE-2005/train.data --domain gen --processed 
+$ cd data_processing/
+$ git clone https://github.com/tticoin/LSTM-ER.git
+$ cd LSTM-ER/data/ && mkdir common/ && cd common/
+$ wget http://nlp.stanford.edu/software/stanford-corenlp-full-2015-04-20.zip && unzip stanford-corenlp-full-2015-04-20.zip
+$ wget http://nlp.stanford.edu/software/stanford-postagger-2015-04-20.zip && unzip stanford-postagger-2015-04-20.zip
+$ cd ..
+```
+
+Place the ACE 2005 dataset original data `English/` folder into `data_processing/LSTM-ER/data/ace2005/` and run,
+```
+$ zsh preprocess_ace05.zsh 
+$ sh process_ace05.sh
 ```
 
 Download the pre-trained word embeddings:
 ```
-$ mkdir embeds/
-$ cd embeds
+$ mkdir embeds/ && cd embeds
 $ wget http://tti-coin.jp/data/wikipedia200.bin
-$ cd ../data_processing
-$ python3 bin2txt.py ../embeds/wikipedia200.bin   # convert to .txt
+$ python3 ../data_processing/bin2txt.py wikipedia200.bin   # convert to .txt
+$ cd ..
 ```
 
 ## Usage
@@ -54,10 +57,11 @@ Alternatively one can use the bash script:
 $ cd src/bin
 $ ./run_ace05.sh   # run multiple models train + testing
 ```
+
 A portion of the model parameters can be given directly from the command line as follows:
 ```
-usage: walk_re.py [-h] --config CONFIG [--train] [--test] [--gpu GPU]
-                  [--walks WALKS] [--att {vector}] [--example]
+usage: walk_re.py [-h] --config CONFIG [--train] [--test] --gpu GPU
+                  [--walks WALKS] [--att {True,False}] [--example]
                   [--direction {l2r,r2l,l2r+r2l}] [--folder FOLDER]
                   [--embeds EMBEDS] [--train_data TRAIN_DATA]
                   [--test_data TEST_DATA] [--epoch EPOCH] [--early_stop]
@@ -68,11 +72,11 @@ optional arguments:
   --config CONFIG       Yaml parameter file
   --train               Training mode - model is saved
   --test                Testing mode - needs a model to load
-  --gpu GPU             GPU number. Use -1 for CPU.
+  --gpu GPU             GPU number, use -1 for CPU
   --walks WALKS         Number of walk iterations
-  --att {vector}        attention type
+  --att {True,False}    Use attention or not
   --example             Print the sentences and info in the 1st batch, then
-                        exit.
+                        exit (useful for debugging)
   --direction {l2r,r2l,l2r+r2l}
                         Direction of arguments to classify
   --folder FOLDER       Destination folder to save model, predictions and
@@ -83,8 +87,8 @@ optional arguments:
   --test_data TEST_DATA
                         Test data dile
   --epoch EPOCH         Stopping epoch
-  --early_stop
-  --preds PREDS         Forder name for predictions
+  --early_stop          Use early stopping
+  --preds PREDS         Folder name for predictions
 ```
 
 
@@ -98,7 +102,8 @@ $ ./tune_ace05.sh
 ### Citation
 Please cite the following paper when using this code:
 
-> @inproceedings{christopoulou2018walk,  
+```
+@inproceedings{christopoulou2018walk,  
 title={A Walk-based Model on Entity Graphs for Relation Extraction},  
 author={Christopoulou, Fenia and Miwa, Makoto and Ananiadou, Sophia},  
 booktitle={Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics (Volume 2: Short Papers)},  
@@ -106,4 +111,5 @@ year={2018},
 publisher={Association for Computational Linguistics},  
 pages={81--88},  
 }
+```
 

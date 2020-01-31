@@ -2,15 +2,14 @@
 # -*- coding: utf-8 -*-
 """
 Created on %(date)s
-
 @author: fenia
 """
 
 import os, sys, re
-sys.path.append('./common/geniatagger-3.0.2/')
+sys.path.append('./common/genia-tagger-py/')
 sys.path.append('./common/geniass/')
 pwd = '/'.join(os.path.realpath(__file__).split('/')[:-1])
-from geniatagger_wrapper import GENIATagger
+from geniatagger import GENIATagger
 from pycorenlp import StanfordCoreNLP
 nlp = StanfordCoreNLP('http://localhost:9000')
 
@@ -26,15 +25,15 @@ properties_tok = {
   'outputFormat': 'json'
 }
 
-genia_splitter = os.path.join("./common/", "geniass")
-exec_genia = os.path.join("./common/", "geniatagger-3.0.2", "geniatagger")
-tagger = GENIATagger(exec_genia)
+
+pwd = '/'.join(os.path.realpath(__file__).split('/')[:-1])
+genia_splitter = os.path.join("./common", "geniass")
+genia_tagger = GENIATagger(os.path.join("./common", "genia-tagger-py", "geniatagger-3.0.2", "geniatagger"))
 
 
 def using_split2(line, _len=len):
     """
     Credits to https://stackoverflow.com/users/1235039/aquavitae
-
     :param line: sentence
     :return: a list of words and their indexes in a string.
     """
@@ -55,7 +54,7 @@ def replace2symbol(string):
     string = string.replace('”', '"').replace('’', "'").replace('–', '-').replace('‘', "'").replace('‑', '-').replace(
         '\x92', "'").replace('»', '"').replace('—', '-').replace('\uf8fe', ' ').replace('«', '"').replace('\uf8ff',
                                                                                                           ' ').replace(
-        '£', '#').replace('\u2028', ' ').replace('\u2029', ' ')
+        '£', '#').replace('\u2028', ' ').replace('\u2029', ' ').replace('`', "'")
 
     return string
 
@@ -126,21 +125,62 @@ def sentence_split_genia(tabst):
     Args:
         tabst: (list) title+abstract
 
-    Return
-        (list) all sentences in abstract
+    Returns: (list) all sentences in abstract
     """
     os.chdir(genia_splitter)
 
     with open('temp_file.txt', 'w') as ofile:
-        ofile.write(''.join(tabst))
+        for t in tabst:
+            ofile.write(t+'\n')
     os.system('./geniass temp_file.txt temp_file.split.txt > /dev/null 2>&1')
 
     split_lines = []
     with open('temp_file.split.txt', 'r') as ifile:
-        for line in ifile:
-            line = line.rstrip()
-            if line != '':
-                split_lines.append(line.rstrip())
+        all_lines = [line for line in ifile]
+
+        i = 0
+        flag = False
+        line_ = ''
+        while i < len(all_lines):
+
+            line = all_lines[i]
+            if line.rstrip('\n').endswith('i.v.'):
+                line_ += line.rstrip('\n') + ' '
+                i += 1
+                # print(line)
+                flag = False
+            elif line.rstrip('\n').endswith('U.S.'):
+                line_ += line.rstrip('\n') + ' '
+                i += 1
+                # print(line)
+                flag = False
+            elif line.rstrip('\n').endswith('i.e.'):
+                line_ += line.rstrip('\n') + ' '
+                i += 1
+                # print(line)
+                flag = False
+            elif line.rstrip('\n').endswith('e.g.'):
+                line_ += line.rstrip('\n') + ' '
+                i += 1
+                # print(line)
+                flag = False
+            elif line.rstrip('\n') == 'RESULTS: Indomethacin, in vitro and in vivo.':
+                line_ += line.rstrip('\n') + ' '
+                i += 1
+                # print(line)
+                flag = False
+            else:
+                line_ += line.rstrip('\n')
+                flag = True
+                i += 1
+
+            if flag:
+                split_lines.append(line_)
+                # if ('i.v.' in line_) or ('e.g.' in line_) or ('i.e.' in line_) or ('U.S.' in line_):
+                #     print(line_)
+                line_ = ''
+                flag = False
+
     os.system('rm temp_file.txt temp_file.split.txt')
     os.chdir(pwd)
     return split_lines
@@ -150,17 +190,15 @@ def tokenize_genia(sents):
     """
     Tokenization using Genia Tokenizer
     Args:
-        (list) sentences
-    Return:
-        (list) tokenized sentences
+        sents: (list) sentences
+
+    Returns: (list) tokenized sentences
     """
     token_sents = []
     for i, s in enumerate(sents):
-        s = s.replace("``", "''")
-        s = s.replace("`s", "'s")
-
         tokens = []
-        for word, base_form, pos_tag, chunk, named_entity in tagger.tag(s):
+
+        for word, base_form, pos_tag, chunk, named_entity in genia_tagger.tag(s):
             tokens += [word]
 
         text = []
@@ -186,6 +224,12 @@ def tokenize_genia(sents):
         text = text.replace('.', ' . ')
         text = text.replace('=', ' = ')
         text = text.replace('*', ' * ')
+        text = text.replace('i . v .', 'i.v.')
+        text = text.replace('U . S .', 'U.S.')
+        if '&amp;' in s:
+            text = text.replace("&", "&amp;")
+        else:
+            text = text.replace("&amp;", "&")
 
         text = re.sub(' +', ' ', text).strip()  # remove continuous spaces
 
