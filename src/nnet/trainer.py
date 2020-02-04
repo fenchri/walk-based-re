@@ -36,13 +36,14 @@ class Trainer:
         self.saveto = os.path.join(model_folder, params['save_preds'])
         self.model_folder = model_folder
 
+        self.best_score = 0.0
+        self.best_epoch = 0
+        self.best_loss = 9999999999
+            
         if params['early_stopping']:
             self.patience = params['patience']
             self.cur_patience = 0
-            self.best_loss = 9999999999
-            self.best_score = 0.0
-            self.best_epoch = 0
-
+                        
         if params['param_avg']:
             self.averaged_params = {}
 
