@@ -120,6 +120,8 @@ class Trainer:
             self.best_score = self.test_res['score'][-1]
             self.best_epoch = epoch
             self.cur_patience = 0
+            save_model(self.model_folder, self.model, self.loader)
+            
         #if self.test_res['loss'][-1] < self.best_loss:
         #    self.best_loss = self.test_res['loss'][-1]
         else:
