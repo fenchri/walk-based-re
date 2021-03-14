@@ -1,6 +1,6 @@
 
 # Walk-based Relation Extraction
-Source code for the paper "[A Walk-based model on Entity Graphs for Relation Extraction](https://www.aclweb.org/anthology/P18-2014/)" in ACL 2018.
+Source code for the ACL 2018 paper "[A Walk-based model on Entity Graphs for Relation Extraction](https://www.aclweb.org/anthology/P18-2014/)".
 
 
 ### Requirements & Environment
